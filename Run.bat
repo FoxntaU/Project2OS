@@ -1,4 +1,4 @@
-java -cp ".;KarelJRobot.jar" DeadlockDetectionResolution
+java -cp ".;KarelJRobot.jar" Main
 pause
 exit
 

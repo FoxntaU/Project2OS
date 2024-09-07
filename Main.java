@@ -31,8 +31,6 @@ class Racer extends Robot {
         World.setupThread(this);
     }
 
-
-
     public void returnToStart() {
         System.out.println("Returning to start at (" + startStreet + ", " + startAvenue + ")");
         moveToLocation(startStreet, startAvenue);
@@ -146,7 +144,7 @@ class Racer extends Robot {
 
 class RobotFactory implements Directions {
     public static Racer[] createRobots(String[] args) {
-        int r = 4;
+        int r = 1;
 
         // Crear robots
         List<Color> colores = new ArrayList<>();
@@ -174,17 +172,75 @@ class RobotFactory implements Directions {
     }
 }
 
+
+class KarelWorldParser {
+    public String worldText;
+    public boolean[][] matrix = new boolean[20][20];
+
+    public KarelWorldParser(String worldText) {
+
+        System.out.println("KarelWorldParser constructor");
+        
+        this.worldText = worldText;
+
+        for (int i = 0; i < 20; i++) {
+            for (int j = 0; j < 20; j++) {
+                matrix[i][j] = false;
+            }
+        }
+
+        String[] tokens = worldText.split(" ");
+
+        for (int i = 0; i < tokens.length; i++) {
+            if (tokens[i].equals("eastwestwalls")) {
+                int street = Integer.parseInt(tokens[i + 1]) - 1;
+                int avenue = Integer.parseInt(tokens[i + 2]) - 1;
+                fillMatrix(street, avenue);
+
+            } else if (tokens[i].equals("northsouthwalls")) {
+                int avenue = Integer.parseInt(tokens[i + 1]) - 1;
+                int street = Integer.parseInt(tokens[i + 2]) - 1;
+                fillMatrix(street, avenue);
+            }
+        }
+
+        printMatrix();
+
+    }
+
+
+    public void fillMatrix(int street, int avenue) {
+        matrix[avenue][street] = true;
+    }
+
+    public void printMatrix() {
+        for (int i = 0; i < 20; i++) {
+            for (int j = 0; j < 20; j++) {
+                if (matrix[i][j]) {
+                    System.out.print("X ");
+                } else {
+                    System.out.print("  ");
+                }
+            }
+            System.out.println();
+        }
+    }
+}
+
+
+
 public class Main {
     public static void main(String[] args) {
         World.readWorld("Mundo.kwld");
         World.showSpeedControl(true);
         World.setVisible(true);
+        String worldText = World.asText(" ");
+
+        KarelWorldParser map = new KarelWorldParser(worldText);
 
         Racer[] racers = RobotFactory.createRobots(args);
 
-
         System.out.println("Start the searching:  " + '\n');
-
 
 }
 }

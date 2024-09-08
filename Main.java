@@ -1,115 +1,110 @@
 import kareltherobot.*;
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.concurrent.Semaphore;
+import java.util.Random;
 
 class Racer extends Robot {
-    private int number;
-    private String id;
-    private int maxBeepers;
-    private int[] deliveryPosition;
-    private int currentStreet;
-    private int currentAvenue;
-    private int startStreet;
-    private int startAvenue;
-    private int beepersInTheBag;
+    private static final int PICKUP_AVENUE = 19;
+    private static final int PICKUP_STREET = 8;
+    private static Random random = new Random();
+    private int[][] stops = {{5, 5}, {10, 10}, {15, 15}, {20, 20}}; // Coordenadas de paradas
     private int destinationStreet; 
     private int destinationAvenue; 
 
     public Racer(int street, int avenue, Direction direction, int beepers, Color color, int maxBeepers, String id,
             int number, int destStreet, int destAvenue) {
         super(street, avenue, direction, beepers, color);
-        this.id = id;
-        this.number = number;
-        this.maxBeepers = maxBeepers;
-        this.deliveryPosition = new int[] { maxBeepers, 1 };
-        this.currentStreet = street;
-        this.currentAvenue = avenue;
-        this.startStreet = street;
-        this.startAvenue = avenue;
-        this.beepersInTheBag = 0;
         this.destinationStreet = destStreet; 
         this.destinationAvenue = destAvenue; 
         World.setupThread(this);
     }
 
-    public void startJourney(KarelWorldParser map) { 
-        moveToLocation(destinationStreet, destinationAvenue, map);
+    public void startJourney(KarelWorldParser map) {
+        while (true) {
+            moveToLocation(PICKUP_STREET, PICKUP_AVENUE);
+            if (!nextToABeeper()) {
+                turnOff(); 
+                break;
+            }
+            pickBeeper();
+            int[] stop = stops[random.nextInt(stops.length)];
+            moveToLocation(stop[0], stop[1]);
+            putBeeper();
+            moveToLocation(PICKUP_STREET, PICKUP_AVENUE);
+        }
+        moveToLocation(1, 1); // Regreso al parqueadero
+        turnOff();
     }
 
-    private void moveToLocation(int targetStreet, int targetAvenue, KarelWorldParser map) {
+    private void moveToLocation(int targetStreet, int targetAvenue) {
         moveToStreet(targetStreet);
         moveToAvenue(targetAvenue);
     }
 
     private void moveToStreet(int targetStreet) {
-        while (currentStreet != targetStreet) {
-            if (currentStreet < targetStreet) {
-                turnTo("NORTH");
-            } else {
-                turnTo("SOUTH");
+        if (getStreet() < targetStreet) {
+            while (facingSouth() && getStreet() != targetStreet) {
+                move();
             }
-            move();
+            while (facingNorth() && getStreet() != targetStreet) {
+                move();
+            }
+        } else if (getStreet() > targetStreet) {
+            while (facingNorth() && getStreet() != targetStreet) {
+                move();
+            }
+            while (facingSouth() && getStreet() != targetStreet) {
+                move();
+            }
         }
     }
 
     private void moveToAvenue(int targetAvenue) {
-        while (currentAvenue != targetAvenue) {
-            if (currentAvenue < targetAvenue) {
-                turnTo("EAST");
-            } else {
-                turnTo("WEST");
+        if (getAvenue() < targetAvenue) {
+            while (facingWest() && getAvenue() != targetAvenue) {
+                move();
             }
-            move();
+            while (facingEast() && getAvenue() != targetAvenue) {
+                move();
+            }
+        } else if (getAvenue() > targetAvenue) {
+            while (facingEast() && getAvenue() != targetAvenue) {
+                move();
+            }
+            while (facingWest() && getAvenue() != targetAvenue) {
+                move();
+            }
         }
     }
 
-    private void turnTo(String direction) {
-        while (!facingDirection(direction)) {
-            turnLeft();
-        }
+    private boolean facingDirection(int targetStreet, int targetAvenue) {
+        if (getStreet() < targetStreet && facingNorth()) return true;
+        if (getStreet() > targetStreet && facingSouth()) return true;
+        if (getAvenue() < targetAvenue && facingEast()) return true;
+        if (getAvenue() > targetAvenue && facingWest()) return true;
+        return false;
     }
 
-    private boolean facingDirection(String direction) {
-        switch (direction) {
-            case "NORTH": return facingNorth();
-            case "SOUTH": return facingSouth();
-            case "EAST":  return facingEast();
-            case "WEST":  return facingWest();
-            default: return false;
-        }
+    private int getStreet() {
+        // Implementa una forma de obtener la calle actual si es posible
+        return 0; // Placeholder
     }
 
-    @Override
-    public void move() {
-        super.move();
-        updatePosition();
-    }
-
-    private void updatePosition() {
-        if (facingNorth()) {
-            currentStreet++;
-        } else if (facingSouth()) {
-            currentStreet--;
-        } else if (facingEast()) {
-            currentAvenue++;
-        } else if (facingWest()) {
-            currentAvenue--;
-        }
+    private int getAvenue() {
+        // Implementa una forma de obtener la avenida actual si es posible
+        return 0; // Placeholder
     }
 }
 
 class RobotFactory implements Directions {
     public static Racer[] createRobots(String[] args, KarelWorldParser map) {
         List<Color> colores = Arrays.asList(Color.blue, Color.red, Color.green, Color.yellow);
-        int[][] destinations = {{5, 5}, {6, 6}, {7, 7}, {8, 8}}; 
-        Racer[] racers = new Racer[colores.size()];
+        int[][] startPositions = {{1, 1}, {5, 1}, {1, 5}, {5, 5}, {2, 2}, {6, 6}, {7, 8}, {3, 3}}; // Posiciones iniciales variadas
+        Racer[] racers = new Racer[startPositions.length];
 
         for (int i = 0; i < racers.length; i++) {
-            racers[i] = new Racer(1, i + 1, East, 0, colores.get(i), 10, "Robot" + i, i, destinations[i][0], destinations[i][1]);
+            racers[i] = new Racer(startPositions[i][0], startPositions[i][1], East, 0, colores.get(i % colores.size()), 10, "Robot" + i, i, 10, 10);
         }
 
         return racers;
@@ -166,9 +161,8 @@ public class Main {
         KarelWorldParser map = new KarelWorldParser(World.asText(" "));
         Racer[] racers = RobotFactory.createRobots(args, map);
 
-        // Start each robot's journey
         for (Racer racer : racers) {
-            racer.startJourney(map);
+            new Thread(() -> racer.startJourney(map)).start();
         }
     }
 }

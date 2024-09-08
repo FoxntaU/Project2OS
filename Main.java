@@ -1,13 +1,10 @@
 import kareltherobot.*;
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Arrays;
-
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.concurrent.Semaphore;
 
 class Racer extends Robot {
     private int number;
@@ -19,8 +16,11 @@ class Racer extends Robot {
     private int startStreet;
     private int startAvenue;
     private int beepersInTheBag;
+    private int destinationStreet; 
+    private int destinationAvenue; 
 
-    public Racer(int street, int avenue, Direction direction, int beepers, Color color, int maxBeepers, String id, int number) {
+    public Racer(int street, int avenue, Direction direction, int beepers, Color color, int maxBeepers, String id,
+            int number, int destStreet, int destAvenue) {
         super(street, avenue, direction, beepers, color);
         this.id = id;
         this.number = number;
@@ -31,24 +31,18 @@ class Racer extends Robot {
         this.startStreet = street;
         this.startAvenue = avenue;
         this.beepersInTheBag = 0;
+        this.destinationStreet = destStreet; 
+        this.destinationAvenue = destAvenue; 
         World.setupThread(this);
     }
 
-    public void moveToLocation(int targetStreet, int targetAvenue, KarelWorldParser map) {
-        int[] start = {currentStreet, currentAvenue};
-        int[] goal = {targetStreet, targetAvenue};
-        List<int[]> path = map.bfs(start, goal);
-
-        if (path != null) {
-            for (int[] step : path) {
-                moveToExactLocation(step[0], step[1]);
-            }
-        }
+    public void startJourney(KarelWorldParser map) { 
+        moveToLocation(destinationStreet, destinationAvenue, map);
     }
 
-    private void moveToExactLocation(int street, int avenue) {
-        moveToStreet(street);
-        moveToAvenue(avenue);
+    private void moveToLocation(int targetStreet, int targetAvenue, KarelWorldParser map) {
+        moveToStreet(targetStreet);
+        moveToAvenue(targetAvenue);
     }
 
     private void moveToStreet(int targetStreet) {
@@ -88,15 +82,36 @@ class Racer extends Robot {
             default: return false;
         }
     }
+
+    @Override
+    public void move() {
+        super.move();
+        updatePosition();
+    }
+
+    private void updatePosition() {
+        if (facingNorth()) {
+            currentStreet++;
+        } else if (facingSouth()) {
+            currentStreet--;
+        } else if (facingEast()) {
+            currentAvenue++;
+        } else if (facingWest()) {
+            currentAvenue--;
+        }
+    }
 }
 
 class RobotFactory implements Directions {
-    public static Racer[] createRobots(String[] args) {
+    public static Racer[] createRobots(String[] args, KarelWorldParser map) {
         List<Color> colores = Arrays.asList(Color.blue, Color.red, Color.green, Color.yellow);
-        Racer[] racers = new Racer[4];
-        for (int i = 0; i < 4; i++) {
-            racers[i] = new Racer(1, i + 1, East, 0, colores.get(i), 10, "Robot" + i, i);
+        int[][] destinations = {{5, 5}, {6, 6}, {7, 7}, {8, 8}}; 
+        Racer[] racers = new Racer[colores.size()];
+
+        for (int i = 0; i < racers.length; i++) {
+            racers[i] = new Racer(1, i + 1, East, 0, colores.get(i), 10, "Robot" + i, i, destinations[i][0], destinations[i][1]);
         }
+
         return racers;
     }
 }
@@ -140,47 +155,6 @@ class KarelWorldParser {
             System.out.println();
         }
     }
-
-    public List<int[]> bfs(int[] start, int[] goal) {
-        int[][] directions = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
-        boolean[][] visited = new boolean[20][20];
-        Queue<int[]> queue = new LinkedList<>();
-        Map<String, int[]> parent = new HashMap<>();
-
-        queue.add(start);
-        visited[start[0]][start[1]] = true;
-        parent.put(start[0] + "," + start[1], null);
-
-        while (!queue.isEmpty()) {
-            int[] current = queue.poll();
-            if (Arrays.equals(current, goal)) {
-                return reconstructPath(parent, current);
-            }
-
-            for (int[] dir : directions) {
-                int[] next = {current[0] + dir[0], current[1] + dir[1]};
-                if (isValidMove(next, visited)) {
-                    queue.add(next);
-                    visited[next[0]][next[1]] = true;
-                    parent.put(next[0] + "," + next[1], current);
-                }
-            }
-        }
-        return null;
-    }
-
-    private boolean isValidMove(int[] position, boolean[][] visited) {
-        return position[0] >= 0 && position[0] < 20 && position[1] >= 0 && position[1] < 20 &&
-               !visited[position[0]][position[1]] && !matrix[position[0]][position[1]];
-    }
-
-    private List<int[]> reconstructPath(Map<String, int[]> parent, int[] goal) {
-        List<int[]> path = new LinkedList<>();
-        for (int[] at = goal; at != null; at = parent.get(at[0] + "," + at[1])) {
-            path.add(0, at);
-        }
-        return path;
-    }
 }
 
 public class Main {
@@ -190,7 +164,11 @@ public class Main {
         World.setVisible(true);
 
         KarelWorldParser map = new KarelWorldParser(World.asText(" "));
-        Racer[] racers = RobotFactory.createRobots(args);
-        racers[0].moveToLocation(10, 10, map); // ejemplo de robot utilizando la funcion BFS
+        Racer[] racers = RobotFactory.createRobots(args, map);
+
+        // Start each robot's journey
+        for (Racer racer : racers) {
+            racer.startJourney(map);
+        }
     }
 }

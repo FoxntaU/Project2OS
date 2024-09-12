@@ -6,9 +6,9 @@ import java.util.Random;
 import java.util.LinkedList;
 import java.util.Queue;
 
-class Racer extends Robot implements Runnable { // Implementar Runnable para los hilos
+class Racer extends Robot implements Runnable {
     private int number; // Número de robot
-    private String id; // Identificador del robot color 
+    private String id; // Identificador del robot color
     private int maxBeepers; // Máximo de beepers que puede llevar
     private int[] deliveryPosition; // Posición de entrega
     private int currentStreet; // Calle actual
@@ -27,7 +27,7 @@ class Racer extends Robot implements Runnable { // Implementar Runnable para los
         this.id = id;
         this.number = number;
         this.maxBeepers = maxBeepers;
-        this.deliveryPosition = new int[] { maxBeepers, 1 }; // Calle en la posición 0 y la avenida en la posición 1
+        this.deliveryPosition = new int[] { maxBeepers, 1 };
         this.currentStreet = street;
         this.currentAvenue = avenue;
         this.startStreet = street;
@@ -70,40 +70,52 @@ class Racer extends Robot implements Runnable { // Implementar Runnable para los
         }
     }
 
+    // Implementación de las instrucciones para las paradas
     public void irAParadaAleatoria() {
         Random random = new Random();
-
-        Point[] parada1 = {
-            new Point(15, 3), new Point(15, 4), new Point(15, 5), new Point(15, 6), new Point(15, 7), new Point(15, 8),
-            new Point(16, 3), new Point(16, 4), new Point(16, 5), new Point(16, 6), new Point(16, 7), new Point(16, 8),
-            new Point(17, 3), new Point(17, 4), new Point(17, 5), new Point(17, 7), new Point(17, 8)
-        };
-
-        Point[] parada2 = {
-            new Point(10, 4), new Point(10, 5),
-            new Point(11, 4), new Point(11, 5), new Point(11, 6), new Point(11, 8), new Point(11, 9),
-            new Point(12, 4), new Point(12, 5), new Point(12, 6), new Point(12, 7), new Point(12, 8), new Point(12, 9),
-            new Point(13, 4), new Point(13, 5), new Point(13, 6), new Point(13, 7), new Point(13, 8), new Point(13, 9)
-        };
-
-        Point[] parada3 = {
-            new Point(7, 7), new Point(7, 9), 
-            new Point(8, 7), new Point(8, 8), new Point(8, 9),
-        };
-
-        Point[] parada4 = {
-            new Point(18, 18), new Point(18, 19),
-            new Point(19, 18), new Point(19, 19)
-        };
-
-        Point[][] paradas = { parada1, parada2, parada3, parada4 };
-        Point[] paradaSeleccionada = paradas[random.nextInt(paradas.length)];
-
-        Point destino = paradaSeleccionada[random.nextInt(paradaSeleccionada.length)];
-        moveToLocation(new Point(currentStreet, currentAvenue), destino);
-
-        if (anyBeepersInBeeperBag()) {
-            putBeeper();
+        
+        // Paradas definidas
+        Point parada1 = new Point(16, 6); // Parada 1
+        Point parada2 = new Point(12, 7); // Parada 2
+        Point parada3 = new Point(7, 8);  // Parada 3
+        Point parada4 = new Point(18, 19); // Parada 4
+        
+        // Movimiento según parada asignada al robot
+        switch (number % 4 + 1) {
+            case 1:
+                // Parada 1: (16, 6) → (14, 3) → (6, 7) → (19, 1)
+                moveToLocation(new Point(currentStreet, currentAvenue), parada1);
+                putBeeper();
+                moveToLocation(parada1, new Point(14, 3));
+                moveToLocation(new Point(14, 3), new Point(6, 7));
+                moveToLocation(new Point(6, 7), new Point(19, 1));
+                break;
+            case 2:
+                // Parada 2: (9, 8) → (9, 13) → (10, 14) → (12, 7) → (6, 6) → (10, 10) → (19, 1)
+                moveToLocation(new Point(currentStreet, currentAvenue), new Point(9, 8));
+                moveToLocation(new Point(9, 8), new Point(9, 13));
+                moveToLocation(new Point(9, 13), new Point(10, 16));
+                moveToLocation(new Point(10, 16), parada2);
+                putBeeper();
+                moveToLocation(parada2, new Point(6, 6));
+                moveToLocation(new Point(6, 6), new Point(6, 10));
+                moveToLocation(new Point(6, 10), new Point(19, 1));
+                break;
+            case 3:
+                // Parada 3: (7, 8) → (10, 10) → (19, 1)
+                moveToLocation(new Point(currentStreet, currentAvenue), parada3);
+                putBeeper();
+                moveToLocation(parada3, new Point(10, 10));
+                moveToLocation(new Point(10, 10), new Point(19, 1));
+                break;
+            case 4:
+                // Parada 4: (9, 8) → (9, 13) → (18, 19) → (19, 1)
+                moveToLocation(new Point(currentStreet, currentAvenue), new Point(9, 8));
+                moveToLocation(new Point(9, 8), new Point(9, 13));
+                moveToLocation(new Point(9, 13), parada4);
+                putBeeper();
+                moveToLocation(parada4, new Point(19, 1));
+                break;
         }
     }
 
@@ -111,7 +123,7 @@ class Racer extends Robot implements Runnable { // Implementar Runnable para los
         while (true) {
             moveToLocation(new Point(currentStreet, currentAvenue), beeperLocation);
             if (!nextToABeeper()) {
-                break; 
+                break;
             }
             recogerBeeper();
             irAParadaAleatoria();
@@ -155,14 +167,6 @@ class Racer extends Robot implements Runnable { // Implementar Runnable para los
         }
     }
 
-    public int getMaxBeepers() {
-        return this.maxBeepers;
-    }
-
-    public int[] getDeliveryPosition() {
-        return this.deliveryPosition;
-    }
-
     public int[] getCurrentPosition() {
         return new int[] { currentStreet, currentAvenue };
     }
@@ -187,7 +191,7 @@ class Racer extends Robot implements Runnable { // Implementar Runnable para los
 
     @Override
     public void run() {
-        realizarTareas(); // Al ejecutar el hilo, el robot empieza a realizar tareas
+        realizarTareas();
     }
 }
 
@@ -390,7 +394,7 @@ public class Main {
         KarelWorldParser map = new KarelWorldParser(worldText);
         boolean[][] laberinto = map.matrix;
 
-        int numRobots = 8;
+        int numRobots = 12;
 
         Racer[] racers = RobotFactory.createRobots(numRobots, laberinto);
 

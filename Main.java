@@ -100,6 +100,7 @@ class Racer extends Robot implements Runnable {
         Point parada4 = new Point(18, 19); // Parada 4
 
         int paradaAleatoria = random.nextInt(4) + 1;
+        
 
         // Movimiento según parada asignada al robot
         switch (paradaAleatoria) {
@@ -567,7 +568,7 @@ public class Main {
         KarelWorldParser map = new KarelWorldParser(worldText);
         boolean[][] laberinto = map.matrix;
 
-        int numRobots = 8;
+        int numRobots = 10;
 
         Racer[] racers = RobotFactory.createRobots(numRobots, laberinto);
 
